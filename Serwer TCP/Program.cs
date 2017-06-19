@@ -35,7 +35,7 @@ namespace Serwer_TCP
 
 
 
-
+            // petla do 5, gdyz 5 klientow maksymalnie.
         }
 
         public void init(Program program)
