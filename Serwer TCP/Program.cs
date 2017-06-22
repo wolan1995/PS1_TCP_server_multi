@@ -15,7 +15,7 @@ namespace Serwer_TCP
     {
 
         Socket sck;
-        Thread[] tabThread = new Thread[5];
+        List<Thread> tabThread = new List<Thread>();
         String port;
 
         static void Main(string[] args)
@@ -24,23 +24,36 @@ namespace Serwer_TCP
             Program program = new Program();
             program.init(program);
             program.initThread(program);
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < program.tabThread.Count; i++)
             {
                 program.tabThread[i].Start();
             }
-            for (int i = 0; i < 5; i++)
+            while (true)
             {
-                program.tabThread[i].Join();
+
+                for (int i = 0; i < program.tabThread.Count; i++)
+                {
+                    if (!program.tabThread[i].IsAlive)
+                    {
+                       // program.tabThread[i].Join();
+                        program.tabThread.RemoveAt(i);
+                        program.tabThread.Add(new Thread(() => program.newSocket(program)));
+                        program.tabThread[(program.tabThread.Count-1)].Start();
+
+
+
+                    }
+                }
             }
 
+            
 
 
-            // petla do 5, gdyz 5 klientow maksymalnie.
         }
 
         public void init(Program program)
         {
-            sck = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp); //socket   
+            sck = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp); //socket  
             port = program.getPort();
             program.SetBind(Int32.Parse(port), sck);
         }
@@ -49,8 +62,7 @@ namespace Serwer_TCP
         {
             for (int i = 0; i < 5; i++)
             {
-
-                tabThread[i] = new Thread(() => newSocket(program));
+                tabThread.Add( new Thread(() => newSocket(program))); // nowy watek, do ktorego przypisana jest metoda
             }
 
         }
@@ -58,16 +70,16 @@ namespace Serwer_TCP
 
         private void newSocket(Program program)
         {
-             //BIND - ustalamy adres i port
+            //BIND - ustalamy adres i port
 
-            sck.Listen(5);//maksymalna ilosc polaczen 
+            sck.Listen(5);//maksymalna ilosc polaczen
 
             Socket accepted = program.SetAccept(sck); // gniazdo do nasłuchu
             while (true)
             {
                 try
                 {
-                    //tworzy tablicę o takim rozmiarze jak rozmiar buforu danych 
+                    //tworzy tablicę o takim rozmiarze jak rozmiar buforu danych
                     byte[] Buffer = new byte[accepted.SendBufferSize];
                     int bytesRead = accepted.Receive(Buffer);
                     if (bytesRead == 0) break;
@@ -84,23 +96,17 @@ namespace Serwer_TCP
                 }
                 catch (SocketException)
                 {
-                    Console.Write("\nPolaczenie zostalo zerwane przez klienta. \nWcisnij ESC zeby zamknac program, lub dowolny klawisz aby kontynuowac dzialanie.\n\n");
-                    if (Console.ReadKey(true).Key == ConsoleKey.Escape)
-                    {
-                        sck.Close();
+                    Console.Write("\nKlient " + accepted.RemoteEndPoint + " niespodziewanie sie rozlaczyl\n\n");
+                    
+                        accepted.Close();
                         break;
-                    }
-
-                    else
-                    {
-                        //Main(args);
-                    }
+                
                 }
 
 
             }
             //zamknięcie gniazda
-            sck.Close();
+            accepted.Close();
         }
         private String getPort()
         {
