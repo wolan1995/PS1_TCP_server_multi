@@ -70,7 +70,6 @@ namespace Serwer_TCP
 
         private void newSocket(Program program)
         {
-            //BIND - ustalamy adres i port
 
             sck.Listen(5);//maksymalna ilosc polaczen
 
